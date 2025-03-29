@@ -35,7 +35,7 @@ instructionMsg  BYTE "===== HANGMAN GAME RULES =====", 0dh, 0ah, 0dh, 0ah
                 BYTE "- The second player has 6 incorrect guesses to solve the word", 0dh, 0ah, 0dh, 0ah
                 BYTE "Press any key to return to the main menu", 0
 wordPrompt      BYTE "Player 1, enter a word: ", 0
-genrePrompt     BYTE "Enter the genre/category: ", 0
+hintPrompt     BYTE "Enter Hint: ", 0
 enterGuessMsg   BYTE "Enter a letter: ", 0
 usedLetterMsg   BYTE "You already guessed that letter!", 0
 correctGuessMsg BYTE "Good guess!", 0
@@ -43,13 +43,13 @@ wrongGuessMsg   BYTE "Wrong guess!", 0
 winMsg          BYTE "Congratulations! You won!", 0
 loseMsg         BYTE "Game over! You lost!", 0
 wordWasMsg      BYTE "The word was: ", 0
-genreIsMsg      BYTE "Genre: ", 0
+hintIsMsg       BYTE "Hint: ", 0
 triesLeftMsg    BYTE "Tries left: ", 0
 playAgainMsg    BYTE "Play again? (y/n): ", 0
 invalidInputMsg BYTE "Invalid input! Try again.", 0
 
-; ---------------------- Word Lists with Genres ----------------------
-; Format: word, 0, genre, 0
+; ---------------------- Word Lists with Hints ----------------------
+; Format: word, 0, hint, 0
 easyWords       BYTE "APPLE", 0, "FOOD", 0
                 BYTE "MARIO", 0, "GAME", 0
                 BYTE "PIZZA", 0, "FOOD", 0
@@ -70,7 +70,7 @@ hardWords       BYTE "ALGORITHM", 0, "COMPUTING", 0
 
 ; ---------------------- Game State Variables ----------------------
 currentWord     BYTE WORD_SIZE DUP(0)      ; Current word to guess
-wordGenre       BYTE WORD_SIZE DUP(0)      ; Genre of the current word
+wordHint       BYTE WORD_SIZE DUP(0)      ; Hint for the current word
 hiddenWord      BYTE WORD_SIZE DUP(0)      ; Word with _ for hidden letters
 usedLetters     BYTE 26 DUP(0)             ; Track guessed letters (0=unused, 1=used)
 triesRemaining  BYTE ?                     ; Number of tries left
@@ -147,7 +147,7 @@ white_color = white + (black * 16)
 gray_color = gray + (black * 16)
 title_color = 0Dh      ; Bright Magenta
 menu_color = 07h       ; Light Grey
-genre_color = 03h      ; Dark Cyan
+hint_color = 03h       ; Dark Cyan
 prompt_color = 0Fh     ; White
 
 .code
@@ -281,7 +281,7 @@ MultiplayerGame PROC
     call ClearScreen
     call DisplayTitle
     
-    ; Get word and genre from Player 1
+    ; Get word and hint from Player 1
     call GetPlayerInput
     
     ; Initialize game state
@@ -307,7 +307,7 @@ GameMainLoop:
     
     ; Display current game state
     call DisplayHiddenWord
-    call DisplayGenreHint
+    call DisplayHint
     call Crlf
     call DisplayHangman
     call Crlf
@@ -488,14 +488,14 @@ SkipWord:
 FoundWordEnd:
     inc esi             ; Move past null terminator
     
-    ; Skip genre (find null terminator)
-SkipGenre:
+    ; Skip hint (find null terminator)
+SkipHint:
     cmp BYTE PTR [esi], 0
-    je FoundGenreEnd
+    je FoundHintEnd
     inc esi
-    jmp SkipGenre
+    jmp SkipHint
     
-FoundGenreEnd:
+FoundHintEnd:
     inc esi             ; Move past null terminator
     inc ecx             ; Increment word counter
     jmp FindWord
@@ -513,19 +513,19 @@ WordFound:
     mov wordLength, eax
     pop esi             ; Restore ESI
     
-    ; Find genre (skip to null terminator)
+    ; Find hint (skip to null terminator)
     push esi            ; Save word pointer
-FindGenreStart:
+FindHintStart:
     cmp BYTE PTR [esi], 0
-    je GenreFound
+    je HintFound
     inc esi
-    jmp FindGenreStart
+    jmp FindHintStart
     
-GenreFound:
-    inc esi             ; Move past null terminator to genre
+HintFound:
+    inc esi             ; Move past null terminator to hint
     
-    ; Copy genre to wordGenre
-    mov edi, OFFSET wordGenre
+    ; Copy hint to wordHint
+    mov edi, OFFSET wordHint
     call CopyString
     
     ; Initialize hidden word
@@ -578,7 +578,7 @@ CopyDone:
 CopyString ENDP
 
 ; ---------------------------------------------------------
-; GetPlayerInput - Gets word and genre from Player 1
+; GetPlayerInput - Gets word and hint from Player 1
 ; ---------------------------------------------------------
 GetPlayerInput PROC
     ; Get word from Player 1
@@ -599,11 +599,11 @@ GetPlayerInput PROC
     
     call Crlf
     
-    ; Get genre from Player 1
-    mov edx, OFFSET genrePrompt
+    ; Get hint from Player 1
+    mov edx, OFFSET hintPrompt
     call WriteString
     
-    ; Read genre (visible input)
+    ; Read hint (visible input)
     mov edx, OFFSET inputBuffer
     mov ecx, WORD_SIZE
     call ReadString
@@ -611,21 +611,21 @@ GetPlayerInput PROC
     ; Convert to uppercase
     mov ecx, eax
     mov esi, OFFSET inputBuffer
-ConvertGenreLoop:
+ConvertHintLoop:
     mov al, [esi]
     cmp al, 'a'
-    jl SkipGenreChar
+    jl SkipHintChar
     cmp al, 'z'
-    jg SkipGenreChar
+    jg SkipHintChar
     sub al, 32    ; Convert to uppercase
     mov [esi], al
-SkipGenreChar:
+SkipHintChar:
     inc esi
-    loop ConvertGenreLoop
+    loop ConvertHintLoop
     
-    ; Copy input to wordGenre
+    ; Copy input to wordHint
     mov esi, OFFSET inputBuffer
-    mov edi, OFFSET wordGenre
+    mov edi, OFFSET wordHint
     call CopyString
     
     ret
@@ -730,15 +730,15 @@ DisplayWordLoop:
 DisplayHiddenWord ENDP
 
 ; ---------------------------------------------------------
-; DisplayGenreHint - Shows genre as hint
+; DisplayHint - Shows hint as hint
 ; ---------------------------------------------------------
-DisplayGenreHint PROC
-    mov eax, genre_color
+DisplayHint PROC
+    mov eax, hint_color
     call SetTextColor
     
-    mov edx, OFFSET genreIsMsg
+    mov edx, OFFSET hintIsMsg
     call WriteString
-    mov edx, OFFSET wordGenre
+    mov edx, OFFSET wordHint
     call WriteString
     call Crlf
     call Crlf  ; Add extra line space
@@ -747,7 +747,7 @@ DisplayGenreHint PROC
     mov eax, white_color
     call SetTextColor
     ret
-DisplayGenreHint ENDP
+DisplayHint ENDP
 
 ; ---------------------------------------------------------
 ; DisplayAlphabet - Displays alphabet with colored letters 
