@@ -1,5 +1,5 @@
-; issues with single mode (incorrect genre and word)
-; incorrect display of alphabets
+; issues with single mode
+; issues with alphabet display
 
 TITLE Hangman Game (hangman.asm)
 
@@ -452,7 +452,15 @@ SelectWord:
     mov wordLength, eax
     
     ; Move to genre (after the null terminator)
-    inc esi
+FindGenre:
+    mov al, [esi]        ; Read character at esi
+    cmp al, 0            ; Check for null terminator
+    je GenreFound        ; If found, move to genre
+    inc esi              ; Otherwise, keep searching
+    jmp FindGenre
+    
+GenreFound:
+    inc esi              ; Move past null terminator to genre
     
     ; Copy genre to wordGenre
     mov edi, OFFSET wordGenre
@@ -478,6 +486,7 @@ HiddenWordDone:
     
     ret
 SelectRandomWord ENDP
+
 
 ; ---------------------------------------------------------
 ; CopyString - Copies string from ESI to EDI (null-terminated)
@@ -662,7 +671,7 @@ DisplayGenreHint PROC
 DisplayGenreHint ENDP
 
 ; ---------------------------------------------------------
-; DisplayAlphabet - Displays alphabet with colored letters
+; DisplayAlphabet - Displays alphabet with colored letters (Debugging Version)
 ; ---------------------------------------------------------
 DisplayAlphabet PROC
     mov ecx, 26      ; 26 letters
@@ -672,43 +681,22 @@ AlphabetLoop:
     push ecx
     push eax
     
-    ; Calculate index in usedLetters array
-    movzx ebx, al
-    sub ebx, 'A'
+    ; Debug: Print ASCII value of letter before processing
+    mov dl, al
+    call WriteChar   ; Print letter
+    mov al, ' '  
+    call WriteChar   ; Print space
     
-    ; Check if letter has been used
-    movzx edx, usedLetters[ebx]
-    cmp dl, 0
-    je UnusedLetter
-    
-    ; Letter has been used - display in gray
-    mov eax, gray_color
-    call SetTextColor
-    jmp DisplayLetter
-    
-UnusedLetter:
-    ; Letter has not been used - display in white
-    mov eax, white_color
-    call SetTextColor
-    
-DisplayLetter:
+    ; Restore register and increment letter
     pop eax
-    call WriteChar
-    mov al, ' '
-    call WriteChar   ; Add space between letters
-    
-    ; Restore letter and increment for next iteration
     pop ecx
-    inc al
+    inc al           ; Move to next letter
     loop AlphabetLoop
-    
-    ; Reset text color
-    mov eax, white_color
-    call SetTextColor
     
     call Crlf
     ret
 DisplayAlphabet ENDP
+
 
 ; ---------------------------------------------------------
 ; DisplayHangman - Displays the hangman ASCII art
