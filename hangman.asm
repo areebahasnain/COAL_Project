@@ -14,13 +14,26 @@ HARD_MAX_WORDS = 5        ; Number of words in hard category
 titleMsg        BYTE "===== HANGMAN GAME =====", 0
 mainMenuMsg     BYTE "1. Single Player", 0dh, 0ah
                 BYTE "2. Multiplayer", 0dh, 0ah
-                BYTE "3. Exit", 0dh, 0ah
-                BYTE "Enter your choice (1-3): ", 0
+                BYTE "3. Game Instructions", 0dh, 0ah
+                BYTE "4. Exit", 0dh, 0ah
+                BYTE "Enter your choice (1-4): ", 0
 difficultyMsg   BYTE "Select difficulty:", 0dh, 0ah
                 BYTE "1. Easy", 0dh, 0ah
                 BYTE "2. Medium", 0dh, 0ah
                 BYTE "3. Hard", 0dh, 0ah
-                BYTE "Enter your choice (1-3): ", 0
+                BYTE "Enter your choice (1-4): ", 0
+instructionMsg  BYTE "===== HANGMAN GAME RULES =====", 0dh, 0ah, 0dh, 0ah
+                BYTE "SINGLE PLAYER MODE:", 0dh, 0ah
+                BYTE "- Select a difficulty level (Easy, Medium, Hard)", 0dh, 0ah
+                BYTE "- A random word will be chosen for you to guess", 0dh, 0ah
+                BYTE "- You have 6 incorrect guesses before the hangman is complete", 0dh, 0ah
+                BYTE "- Try to guess the word one letter at a time", 0dh, 0ah, 0dh, 0ah
+                BYTE "MULTIPLAYER MODE:", 0dh, 0ah
+                BYTE "- One player enters a word for the other to guess", 0dh, 0ah
+                BYTE "- The word is hidden while being entered", 0dh, 0ah
+                BYTE "- The player also enters a genre/category as a hint", 0dh, 0ah
+                BYTE "- The second player has 6 incorrect guesses to solve the word", 0dh, 0ah, 0dh, 0ah
+                BYTE "Press any key to return to the main menu", 0
 wordPrompt      BYTE "Player 1, enter a word: ", 0
 genrePrompt     BYTE "Enter the genre/category: ", 0
 enterGuessMsg   BYTE "Enter a letter: ", 0
@@ -132,6 +145,10 @@ hangmanStages DWORD hangman0, hangman1, hangman2, hangman3, hangman4, hangman5, 
 ; ---------------------- Color Constants ----------------------
 white_color = white + (black * 16)
 gray_color = gray + (black * 16)
+title_color = 0Dh      ; Bright Magenta
+menu_color = 07h       ; Light Grey
+genre_color = 03h      ; Dark Cyan
+prompt_color = 0Fh     ; White
 
 .code
 main PROC
@@ -149,6 +166,8 @@ MainGameLoop:
     cmp al, 2
     je MultiplayerMode
     cmp al, 3
+    je ShowInstructions
+    cmp al, 4
     je ExitGame
     
     ; Invalid choice
@@ -175,6 +194,10 @@ CheckPlayAgain:
     call ReadChar
     call WriteChar                ; Echo character
     call Crlf
+
+ShowInstructions:
+    call DisplayHelpScreen
+    jmp MainGameLoop
     
     ; Check if user wants to play again
     cmp al, 'y'
@@ -190,13 +213,17 @@ main ENDP
 ; DisplayTitle - Displays the game title
 ; ---------------------------------------------------------
 DisplayTitle PROC
-    mov eax, white_color
+    mov eax, title_color
     call SetTextColor
     call Crlf
     mov edx, OFFSET titleMsg
     call WriteString
     call Crlf
     call Crlf
+    
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
     ret
 DisplayTitle ENDP
 
@@ -204,13 +231,22 @@ DisplayTitle ENDP
 ; DisplayMainMenu - Displays the main menu options
 ; ---------------------------------------------------------
 DisplayMainMenu PROC
+    ; Set menu color
+    mov eax, menu_color
+    call SetTextColor
+    
+    ; Display original menu items
     mov edx, OFFSET mainMenuMsg
     call WriteString
+
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
     ret
 DisplayMainMenu ENDP
 
 ; ---------------------------------------------------------
-; GetMenuChoice - Gets menu choice from the user (1-3)
+; GetMenuChoice - Gets menu choice from the user (1-4)
 ; Returns: AL = menu choice
 ; ---------------------------------------------------------
 GetMenuChoice PROC
@@ -284,7 +320,10 @@ GameMainLoop:
     movzx eax, triesRemaining
     call WriteDec
     call Crlf
-    call Crlf
+
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
     
     ; Check win condition
     call CheckWinCondition
@@ -694,11 +733,19 @@ DisplayHiddenWord ENDP
 ; DisplayGenreHint - Shows genre as hint
 ; ---------------------------------------------------------
 DisplayGenreHint PROC
+    mov eax, genre_color
+    call SetTextColor
+    
     mov edx, OFFSET genreIsMsg
     call WriteString
     mov edx, OFFSET wordGenre
     call WriteString
     call Crlf
+    call Crlf  ; Add extra line space
+    
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
     ret
 DisplayGenreHint ENDP
 
@@ -744,6 +791,28 @@ DisplayLetter:
 DisplayAlphabet ENDP
 
 ; ---------------------------------------------------------
+; DisplayHelpScreen - Displays game rules
+; ---------------------------------------------------------
+DisplayHelpScreen PROC
+    call ClearScreen
+    call DisplayTitle
+    
+    ; Display help content
+    mov eax, menu_color
+    call SetTextColor
+    mov edx, OFFSET instructionMsg
+    call WriteString
+    
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
+    
+    ; Wait for key press
+    call ReadChar
+    ret
+DisplayHelpScreen ENDP
+
+; ---------------------------------------------------------
 ; DisplayHangman - Displays the hangman ASCII art
 ; ---------------------------------------------------------
 DisplayHangman PROC
@@ -779,8 +848,14 @@ DisplayHangman ENDP
 ; GetUserGuess - Gets a letter guess from the user
 ; ---------------------------------------------------------
 GetUserGuess PROC
+    mov eax, prompt_color
+    call SetTextColor
     mov edx, OFFSET enterGuessMsg
     call WriteString
+    
+    ; Reset color
+    mov eax, white_color
+    call SetTextColor
     
 GetGuessInput:
     call ReadChar
