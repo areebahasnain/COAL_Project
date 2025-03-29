@@ -1,5 +1,3 @@
-; issues with single mode 
-
 TITLE Hangman Game (hangman.asm)
 
 INCLUDE Irvine32.inc
@@ -403,7 +401,7 @@ InitializeMultiplayerGame ENDP
 ; SelectRandomWord - Selects random word based on difficulty
 ; ---------------------------------------------------------
 SelectRandomWord PROC
-    LOCAL wordOffset:DWORD, wordCount:DWORD
+    LOCAL wordListPtr:DWORD, wordCount:DWORD, randomIndex:DWORD
     
     ; Determine word list based on difficulty
     movzx eax, difficultyLevel
@@ -414,58 +412,93 @@ SelectRandomWord PROC
     jmp SelectHard
     
 SelectEasy:
-    mov wordOffset, OFFSET easyWords
+    mov wordListPtr, OFFSET easyWords
     mov wordCount, EASY_MAX_WORDS
-    jmp SelectWord
+    jmp GenerateRandomIndex
     
 SelectMedium:
-    mov wordOffset, OFFSET mediumWords
+    mov wordListPtr, OFFSET mediumWords
     mov wordCount, MED_MAX_WORDS
-    jmp SelectWord
+    jmp GenerateRandomIndex
     
 SelectHard:
-    mov wordOffset, OFFSET hardWords
+    mov wordListPtr, OFFSET hardWords
     mov wordCount, HARD_MAX_WORDS
     
-SelectWord:
+GenerateRandomIndex:
     ; Generate random index
     mov eax, wordCount
     call RandomRange     ; EAX = random number between 0 and (wordCount-1)
+    mov randomIndex, eax
     
-    ; Calculate word position in the array (each entry has word + genre)
-    ; Approximate offset calculation: index * (WORD_SIZE * 2)
-    mov ebx, WORD_SIZE
-    add ebx, WORD_SIZE   ; Double the word size for word+genre pair
-    mul ebx              ; EAX = index * (WORD_SIZE * 2)
+    ; Navigate through the list to find the selected word
+    mov esi, wordListPtr
+    mov ecx, 0          ; Current word counter
     
-    ; Get pointer to the selected word
-    mov esi, wordOffset
-    add esi, eax
+FindWord:
+    cmp ecx, randomIndex
+    je WordFound        ; Found our target word index
     
+    ; Skip current word (find null terminator)
+SkipWord:
+    cmp BYTE PTR [esi], 0
+    je FoundWordEnd
+    inc esi
+    jmp SkipWord
+    
+FoundWordEnd:
+    inc esi             ; Move past null terminator
+    
+    ; Skip genre (find null terminator)
+SkipGenre:
+    cmp BYTE PTR [esi], 0
+    je FoundGenreEnd
+    inc esi
+    jmp SkipGenre
+    
+FoundGenreEnd:
+    inc esi             ; Move past null terminator
+    inc ecx             ; Increment word counter
+    jmp FindWord
+    
+WordFound:
+    ; ESI now points to the selected word
     ; Copy word to currentWord
     mov edi, OFFSET currentWord
     call CopyString
     
     ; Calculate word length
+    push esi            ; Save ESI
+    mov esi, OFFSET currentWord
     call String_Length
     mov wordLength, eax
+    pop esi             ; Restore ESI
     
-    ; Move to genre (after the null terminator)
-FindGenre:
-    mov al, [esi]        ; Read character at esi
-    cmp al, 0            ; Check for null terminator
-    je GenreFound        ; If found, move to genre
-    inc esi              ; Otherwise, keep searching
-    jmp FindGenre
+    ; Find genre (skip to null terminator)
+    push esi            ; Save word pointer
+FindGenreStart:
+    cmp BYTE PTR [esi], 0
+    je GenreFound
+    inc esi
+    jmp FindGenreStart
     
 GenreFound:
-    inc esi              ; Move past null terminator to genre
+    inc esi             ; Move past null terminator to genre
     
     ; Copy genre to wordGenre
     mov edi, OFFSET wordGenre
     call CopyString
     
     ; Initialize hidden word
+    call InitializeHiddenWord
+    
+    ret
+SelectRandomWord ENDP
+
+; ---------------------------------------------------------
+; InitializeHiddenWord - Creates the hidden version of word
+; ---------------------------------------------------------
+InitializeHiddenWord PROC
     mov esi, OFFSET currentWord
     mov edi, OFFSET hiddenWord
     mov ecx, 0
@@ -484,7 +517,7 @@ HiddenWordDone:
     mov BYTE PTR [edi + ecx], 0
     
     ret
-SelectRandomWord ENDP
+InitializeHiddenWord ENDP
 
 
 ; ---------------------------------------------------------
