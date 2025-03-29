@@ -1,5 +1,4 @@
-; issues with single mode
-; issues with alphabet display
+; issues with single mode 
 
 TITLE Hangman Game (hangman.asm)
 
@@ -671,32 +670,45 @@ DisplayGenreHint PROC
 DisplayGenreHint ENDP
 
 ; ---------------------------------------------------------
-; DisplayAlphabet - Displays alphabet with colored letters (Debugging Version)
+; DisplayAlphabet - Displays alphabet with colored letters 
 ; ---------------------------------------------------------
 DisplayAlphabet PROC
     mov ecx, 26      ; 26 letters
-    mov al, 'A'      ; Start with 'A'
+    mov ebx, 0       ; Index for usedLetters array
     
 AlphabetLoop:
-    push ecx
-    push eax
+    ; Check if letter was used
+    movzx eax, usedLetters[ebx]
+    cmp eax, 1
+    je LetterUsed
     
-    ; Debug: Print ASCII value of letter before processing
-    mov dl, al
-    call WriteChar   ; Print letter
-    mov al, ' '  
-    call WriteChar   ; Print space
+    ; Letter not used - display in white
+    mov eax, white_color
+    call SetTextColor
+    jmp DisplayLetter
     
-    ; Restore register and increment letter
-    pop eax
-    pop ecx
-    inc al           ; Move to next letter
+LetterUsed:
+    ; Letter used - display in gray
+    mov eax, gray_color
+    call SetTextColor
+    
+DisplayLetter:
+    ; Calculate and display the letter
+    mov al, 'A'
+    add al, bl       ; Convert index to ASCII letter
+    call WriteChar
+    mov al, ' '
+    call WriteChar
+    
+    inc ebx          ; Move to next letter
     loop AlphabetLoop
     
+    ; Reset text color
+    mov eax, white_color
+    call SetTextColor
     call Crlf
     ret
 DisplayAlphabet ENDP
-
 
 ; ---------------------------------------------------------
 ; DisplayHangman - Displays the hangman ASCII art
