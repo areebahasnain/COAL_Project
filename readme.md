@@ -86,12 +86,16 @@ To implement the Hangman game in low-level x86 assembly to gain a deeper underst
 
 ---
 
-## 🖼️ Screenshots (Optional)
+## 🖼️ Screenshots 
 
-You can add screenshots here using:
+
 
 ```markdown
-![Main Menu](screenshots/menu.png)
-![Game Progress](screenshots/game.png)
-![Win Screen](screenshots/win.png)
+![image](https://github.com/user-attachments/assets/18f7bb47-1521-4e91-97fe-e58f6a5b8680)
+
+![image](https://github.com/user-attachments/assets/89d718cd-b5ee-406c-be97-fef1d66d7ede)
+![image](https://github.com/user-attachments/assets/9cda85da-5b24-463f-a1c7-a49c6e37f623)
+
+![image](https://github.com/user-attachments/assets/9228d26d-bad4-4987-990d-7d52a4ad466f)
+
 
