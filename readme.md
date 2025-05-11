@@ -90,7 +90,6 @@ To implement the Hangman game in low-level x86 assembly to gain a deeper underst
 
 
 
-```markdown
 ![image](https://github.com/user-attachments/assets/18f7bb47-1521-4e91-97fe-e58f6a5b8680)
 
 ![image](https://github.com/user-attachments/assets/89d718cd-b5ee-406c-be97-fef1d66d7ede)
