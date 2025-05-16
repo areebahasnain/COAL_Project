@@ -192,8 +192,7 @@ CheckPlayAgain:
     mov edx, OFFSET playAgainMsg
     call WriteString
     call ReadChar
-    call WriteChar                ; Echo character
-    call Crlf
+    jmp MainGameLoop
 
 ShowInstructions:
     call DisplayHelpScreen
