@@ -1,6 +1,4 @@
-; I'll begin commenting your Hangman game in Assembly.
-; Since it's a very large file, I'll proceed in sections.
-; Let's start with the `.data` section.
+
 
 TITLE Hangman Game (hangman.asm) ; Sets the title of the program
 
